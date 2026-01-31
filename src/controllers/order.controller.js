@@ -133,8 +133,7 @@ const getOrder = async (req, res, next) => {
     }
 };
 
-    }
-};
+
 
 const updateOrderStatus = async (req, res, next) => {
     try {
