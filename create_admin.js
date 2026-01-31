@@ -11,12 +11,11 @@ if (result.error) {
     dotenv.config({ path: path.join(__dirname, '.env') });
 }
 
+const connectDB = require('./src/config/db');
+
 const createAdmin = async () => {
     try {
-        const mongoUrl = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/rentlify';
-        console.log('Connecting to MongoDB...', mongoUrl.replace(/:([^:@]+)@/, ':****@')); // Mask password
-
-        await mongoose.connect(mongoUrl);
+        await connectDB();
         console.log('Connected to MongoDB');
 
         const adminEmail = 'admin@rentlify.com';

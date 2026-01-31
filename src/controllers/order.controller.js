@@ -133,8 +133,42 @@ const getOrder = async (req, res, next) => {
     }
 };
 
+    }
+};
+
+const updateOrderStatus = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return errorResponse(res, 404, 'Order not found');
+        }
+
+        // Logic to validate state transitions can go here
+        // e.g. Pending -> Confirmed -> Active -> Completed/Returned
+
+        order.status = status;
+
+        // Also update items status if needed (simplified)
+        if (status === 'active') {
+            order.items.forEach(item => item.status = 'active');
+        } else if (status === 'returned' || status === 'completed') {
+            order.items.forEach(item => item.status = 'returned');
+            order.status = 'completed'; // Map returned to completed for order level
+        }
+
+        await order.save();
+
+        successResponse(res, 200, 'Order status updated', order);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createOrder,
     getOrders,
-    getOrder
+    getOrder,
+    updateOrderStatus
 };

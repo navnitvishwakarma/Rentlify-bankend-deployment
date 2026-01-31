@@ -21,14 +21,28 @@ app.use(helmet());
 
 // CORS Configuration
 // CORS Configuration
-const origin = config.clientUrl && config.clientUrl.includes(',')
-    ? config.clientUrl.split(',')
-    : config.clientUrl;
+const allowedOrigins = [
+    config.clientUrl,
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://rentlify-frontend.vercel.app',
+    'https://rentlify-bankend-deployment.vercel.app'
+].filter(Boolean); // Remove null/undefined
 
-app.use(cors({
-    origin: origin,
+// Allow all origins in development or if clientUrl is '*'
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some(o => o.includes(origin)) || config.env === 'development') {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Logger
 if (config.env !== 'test') {

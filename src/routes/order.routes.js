@@ -15,4 +15,7 @@ router.route('/')
 router.route('/:id')
     .get(orderController.getOrder);
 
+router.route('/:id/status')
+    .patch(orderController.updateOrderStatus);
+
 module.exports = router;
