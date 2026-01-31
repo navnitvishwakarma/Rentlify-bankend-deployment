@@ -16,8 +16,13 @@ const app = express();
 app.use(helmet());
 
 // CORS Configuration
+// CORS Configuration
+const origin = config.clientUrl && config.clientUrl.includes(',')
+    ? config.clientUrl.split(',')
+    : config.clientUrl;
+
 app.use(cors({
-    origin: config.clientUrl,
+    origin: origin,
     credentials: true,
 }));
 
