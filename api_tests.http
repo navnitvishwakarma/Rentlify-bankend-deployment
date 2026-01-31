@@ -1,0 +1,124 @@
+@baseUrl = http://localhost:5000/api/v1
+
+### 1. Register Customer
+# @name registerCustomer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "John Customer",
+    "email": "customer@example.com",
+    "password": "password123",
+    "role": "customer"
+}
+
+### 2. Login Customer
+# @name loginCustomer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "customer@example.com",
+    "password": "password123"
+}
+
+### Store Token
+@customerToken = {{loginCustomer.response.body.data.tokens.access.token}}
+
+
+### 3. Register Vendor
+# @name registerVendor
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "Jane Vendor",
+    "email": "vendor@example.com",
+    "password": "password123",
+    "role": "vendor",
+    "businessName": "Rentlify Electronics"
+}
+
+### 4. Login Vendor
+# @name loginVendor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "vendor@example.com",
+    "password": "password123"
+}
+
+### Store Vendor Token
+@vendorToken = {{loginVendor.response.body.data.tokens.access.token}}
+
+
+### 5. Create Product (As Vendor)
+# @name createProduct
+POST {{baseUrl}}/products
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "name": "Sony Alpha a7 III Camera",
+    "description": "Full-frame mirrorless camera",
+    "category": "cameras",
+    "pricing": {
+        "daily": 1500,
+        "deposit": 5000
+    },
+    "totalQuantity": 5
+}
+
+### Store Product ID
+@productId = {{createProduct.response.body.data._id}}
+
+
+### 6. Get All Products (Public)
+GET {{baseUrl}}/products?search=Sony
+
+### 7. Create Quotation (As Customer)
+POST {{baseUrl}}/quotations
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+    "items": [
+        {
+            "product": "{{productId}}",
+            "quantity": 1,
+            "startDate": "2024-02-01",
+            "endDate": "2024-02-05",
+            "price": 1500,
+            "total": 6000
+        }
+    ],
+    "totalAmount": 6000
+}
+
+
+### 8. Create Order / Reserve (As Customer)
+POST {{baseUrl}}/orders
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+    "items": [
+        {
+            "product": "{{productId}}",
+            "quantity": 1,
+            "startDate": "2024-03-01",
+            "endDate": "2024-03-03"
+        }
+    ]
+}
+
+
+### 9. Get My Orders (As Customer)
+GET {{baseUrl}}/orders
+Authorization: Bearer {{customerToken}}
+
+
+### 10. Check Vendor Profile (As Vendor)
+GET {{baseUrl}}/vendors/me
+Authorization: Bearer {{vendorToken}}
