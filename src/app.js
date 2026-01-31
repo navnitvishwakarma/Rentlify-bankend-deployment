@@ -11,6 +11,10 @@ const { successResponse } = require('./utils/response.util');
 const routes = require('./routes');
 
 const app = express();
+const connectDB = require('./config/db');
+
+// Connect to Database immediately when app loads
+connectDB();
 
 // Security Middleware
 app.use(helmet());
