@@ -74,7 +74,64 @@ const getAllVendors = async (req, res, next) => {
     }
 };
 
+const verifyVendor = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id);
+        if (!user) throw new Error('User not found');
+
+        user.isEmailVerified = true;
+        await user.save();
+
+        successResponse(res, 200, 'Vendor verified successfully', user);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const suspendVendor = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { isActive } = req.body; // Expecting boolean
+
+        const user = await User.findById(id);
+        if (!user) throw new Error('User not found');
+
+        user.isActive = isActive;
+        await user.save();
+
+        // Also update vendor profile status if exists
+        const Vendor = require('../models/Vendor');
+        const vendor = await Vendor.findOne({ user: id });
+        if (vendor) {
+            vendor.isActive = isActive;
+            await vendor.save();
+        }
+
+        successResponse(res, 200, `Vendor ${isActive ? 'activated' : 'suspended'} successfully`, user);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteVendor = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const Vendor = require('../models/Vendor');
+
+        await Vendor.findOneAndDelete({ user: id });
+        await User.findByIdAndDelete(id);
+
+        successResponse(res, 200, 'Vendor deleted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getDashboardStats,
-    getAllVendors
+    getAllVendors,
+    verifyVendor,
+    suspendVendor,
+    deleteVendor
 };

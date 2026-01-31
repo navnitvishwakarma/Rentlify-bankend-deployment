@@ -45,6 +45,9 @@ const loginUserWithEmailAndPassword = async (email, password) => {
     if (!user || !(await user.isPasswordMatch(password))) {
         throw new Error('Incorrect email or password');
     }
+    if (user.isActive === false) {
+        throw new Error('Account suspended. Please contact support.');
+    }
     return user;
 };
 
