@@ -84,22 +84,36 @@ const seed = async () => {
         const months = [0, 1, 2, 3, 4, 5];
 
         for (const m of months) {
-            const orderCount = randomInt(2, 4);
+            // Increase volume: 5 to 12 orders per month
+            const orderCount = randomInt(5, 12);
             for (let k = 0; k < orderCount; k++) {
                 const date = new Date();
                 date.setMonth(today.getMonth() - m);
+                // Random day in the month
                 date.setDate(randomInt(1, 28));
 
                 let status = 'completed';
                 let itemStatus = 'completed';
+
+                // More realistic status distribution
+                // Month 0 (Current): Mostly active/confirmed
                 if (m === 0) {
-                    status = randomItem(['confirmed', 'in-progress', 'completed']);
-                    if (status === 'in-progress') itemStatus = 'active';
+                    const r = Math.random();
+                    if (r < 0.4) { status = 'confirmed'; itemStatus = 'pending'; }
+                    else if (r < 0.8) { status = 'in-progress'; itemStatus = 'active'; }
+                    else { status = 'completed'; itemStatus = 'completed'; }
+                }
+                // Month 1 (Previous): Small chance of being late/active
+                else if (m === 1) {
+                    const r = Math.random();
+                    if (r < 0.2) { status = 'in-progress'; itemStatus = 'active'; } // Overdue or long rental
+                    else { status = 'completed'; itemStatus = 'completed'; }
                 }
 
                 const product = randomItem(products);
-                const quantity = 1;
-                const price = product.pricing.daily * randomInt(1, 5);
+                const quantity = 1; // Simplify to 1 qty per order for now
+                const days = randomInt(2, 7);
+                const price = product.pricing.daily * days;
 
                 try {
                     await Order.create({
@@ -112,7 +126,7 @@ const seed = async () => {
                             vendor: vendorProfile._id,
                             quantity: quantity,
                             startDate: date,
-                            endDate: new Date(date.getTime() + 86400000 * 2), // +2 days
+                            endDate: new Date(date.getTime() + 86400000 * days),
                             price: price,
                             status: itemStatus
                         }],

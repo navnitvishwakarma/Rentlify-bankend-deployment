@@ -1,5 +1,6 @@
 const Vendor = require('../models/Vendor');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
 const { successResponse, errorResponse } = require('../utils/response.util');
 
 const getVendor = async (req, res, next) => {
@@ -28,12 +29,12 @@ const updateVendor = async (req, res, next) => {
 const getDashboardStats = async (req, res, next) => {
     try {
         const vendorId = req.params.vendorId || (await Vendor.findOne({ user: req.user._id }))._id;
+        console.log("Debug: Resolving Vendor ID:", vendorId);
+
         const productsCount = await Product.countDocuments({ vendor: vendorId });
+        console.log("Debug: Product Count:", productsCount);
 
         // Orders aggregation
-        const Order = require('../models/Order');
-        const Product = require('../models/Product');
-
         const orderStats = await Order.aggregate([
             { $unwind: '$items' },
             { $match: { 'items.vendor': vendorId } },
@@ -54,6 +55,7 @@ const getDashboardStats = async (req, res, next) => {
                 }
             }
         ]);
+        console.log("Debug: Order Stats Aggregation:", JSON.stringify(orderStats, null, 2));
 
         // Monthly Revenue (Last 6 Months)
         const sixMonthsAgo = new Date();
