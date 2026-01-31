@@ -14,10 +14,14 @@ const app = express();
 const connectDB = require('./config/db');
 
 // Connect to Database immediately when app loads
-connectDB();
+// Connect to Database immediately when app loads
+// connectDB(); // Moved to server.js and api/index.js
 
 // Security Middleware
 app.use(helmet());
+
+// Ignore favicon requests to prevent 500/404 errors in logs
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // CORS Configuration
 // CORS Configuration
