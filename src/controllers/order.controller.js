@@ -97,9 +97,6 @@ const getOrders = async (req, res, next) => {
     }
 };
 
-    }
-};
-
 const getOrder = async (req, res, next) => {
     try {
         const order = await Order.findById(req.params.id)
@@ -126,19 +123,18 @@ const getOrder = async (req, res, next) => {
                 return errorResponse(res, 403, 'Forbidden');
             }
 
-            // Optional: Filter items to show ONLY this vendor's items?
-            // For now, sending full order is okay, but strictly UI should filter.
-            // Let's filter items strictly for security if needed, but often context is useful.
-            // Let's strictly filter the response items for the vendor to avoid leaking other vendor info
+            // Optional: Filter items strictly for context
             order.items = order.items.filter(item => item.vendor.toString() === vendorId);
         }
 
         successResponse(res, 200, 'Order Details', order);
     } catch (error) {
         next(error);
+    }
+};
 
-        module.exports = {
-            createOrder,
-            getOrders,
-            getOrder
-        };
+module.exports = {
+    createOrder,
+    getOrders,
+    getOrder
+};
