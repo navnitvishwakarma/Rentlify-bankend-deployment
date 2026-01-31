@@ -97,7 +97,48 @@ const getOrders = async (req, res, next) => {
     }
 };
 
-module.exports = {
-    createOrder,
-    getOrders,
+    }
 };
+
+const getOrder = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('items.product')
+            .populate('customer', 'name email phone address'); // Add phone/address if available in User model
+
+        if (!order) {
+            return errorResponse(res, 404, 'Order not found');
+        }
+
+        // Access Control
+        if (req.user.role === 'customer') {
+            if (order.customer._id.toString() !== req.user._id.toString()) {
+                return errorResponse(res, 403, 'Forbidden');
+            }
+        } else if (req.user.role === 'vendor') {
+            const Vendor = require('../models/Vendor');
+            const vendor = await Vendor.findOne({ user: req.user._id });
+            const vendorId = vendor._id.toString();
+
+            // Check if vendor has ANY items in this order
+            const hasItems = order.items.some(item => item.vendor.toString() === vendorId);
+            if (!hasItems) {
+                return errorResponse(res, 403, 'Forbidden');
+            }
+
+            // Optional: Filter items to show ONLY this vendor's items?
+            // For now, sending full order is okay, but strictly UI should filter.
+            // Let's filter items strictly for security if needed, but often context is useful.
+            // Let's strictly filter the response items for the vendor to avoid leaking other vendor info
+            order.items = order.items.filter(item => item.vendor.toString() === vendorId);
+        }
+
+        successResponse(res, 200, 'Order Details', order);
+    } catch (error) {
+        next(error);
+
+        module.exports = {
+            createOrder,
+            getOrders,
+            getOrder
+        };
