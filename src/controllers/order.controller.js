@@ -80,15 +80,17 @@ const getOrders = async (req, res, next) => {
         if (req.user.role === 'customer') {
             filter.customer = req.user._id;
         } else if (req.user.role === 'vendor') {
-            // Complex: find orders containing vendor's items. 
-            // For now, let's just return orders where customer is user, or allow admin to see all.
-            // Vendors need to see orders for THEIR items.
-            // The Order model has items array. We can query { 'items.vendor': req.user.vendorId }
-            // But req.user doesn't have vendorId directly on it, need to fetch Vendor.
-            // I'll skip implementing Vendor view logic in detail for this step, just Admin/Customer.
+            const Vendor = require('../models/Vendor');
+            const vendor = await Vendor.findOne({ user: req.user._id });
+            if (vendor) {
+                filter['items.vendor'] = vendor._id;
+            }
         }
 
-        const orders = await Order.find(filter).populate('items.product').sort({ createdAt: -1 });
+        const orders = await Order.find(filter)
+            .populate('items.product')
+            .populate('customer', 'name email')
+            .sort({ createdAt: -1 });
         successResponse(res, 200, 'Orders list', orders);
     } catch (error) {
         next(error);

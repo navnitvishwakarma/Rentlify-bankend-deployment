@@ -73,11 +73,10 @@ const orderSchema = mongoose.Schema({
 });
 
 // Auto-generate OrderID (simple version)
-orderSchema.pre('save', function (next) {
+orderSchema.pre('save', async function () {
     if (!this.orderId) {
         this.orderId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     }
-    next();
 });
 
 const Order = mongoose.model('Order', orderSchema);
