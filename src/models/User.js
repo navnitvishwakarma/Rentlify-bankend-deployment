@@ -45,11 +45,7 @@ const userSchema = mongoose.Schema({
         type: String,
         trim: true,
         uppercase: true,
-    },
-    wishlist: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product'
-    }]
+    }
 }, {
     timestamps: true,
 });
