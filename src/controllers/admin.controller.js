@@ -9,14 +9,14 @@ const getDashboardStats = async (req, res, next) => {
         // 1. Total Revenue (Sum of all completed/confirmed orders)
         // Adjust status filter based on your business logic (e.g., only 'completed' or also 'confirmed')
         const revenueAgg = await Order.aggregate([
-            { $match: { status: { $in: ['confirmed', 'completed', 'active'] } } },
+            { $match: { status: { $in: ['confirmed', 'completed', 'in-progress'] } } },
             { $group: { _id: null, total: { $sum: "$totalAmount" } } }
         ]);
         const totalRevenue = revenueAgg.length > 0 ? revenueAgg[0].total : 0;
 
         // 2. Counts
         const activeUsers = await User.countDocuments({ role: 'customer' });
-        const activeRentals = await Order.countDocuments({ status: 'active' });
+        const activeRentals = await Order.countDocuments({ status: 'in-progress' });
         const totalProducts = await Product.countDocuments();
 
         // 3. Recent Rentals (Orders)

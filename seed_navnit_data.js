@@ -42,89 +42,125 @@ const seed = async () => {
             console.log('Created Vendor Profile');
         }
 
-        // 3. Create/Find Customer User (to place orders)
-        let customerUser = await User.findOne({ email: 'customer@rentlify.com' });
-        if (!customerUser) {
-            customerUser = await User.create({
-                name: 'John Doe',
-                email: 'customer@rentlify.com',
-                password: 'password123',
-                role: 'customer',
-                isEmailVerified: true
-            });
-            console.log('Created Customer User');
-        }
-
-        // 4. Create Products
-        const categories = ['Cameras', 'Lenses', 'Lighting', 'Drones'];
-        const productNames = ['Sony A7III', 'Canon R5', 'DJI Mavic 3', 'Godox SL60W', 'Sony 24-70mm GM'];
-
-        let products = await Product.find({ vendor: vendorProfile._id });
-        if (products.length < 5) {
-            for (let i = 0; i < 5; i++) {
-                const p = await Product.create({
-                    vendor: vendorProfile._id,
-                    name: productNames[i],
-                    description: `Professional ${productNames[i]} for rent. High quality.`,
-                    category: categories[i % categories.length],
-                    images: ['https://placehold.co/600x400?text=' + productNames[i].replace(/ /g, '+')],
-                    pricing: { daily: randomInt(500, 5000), weekly: randomInt(3000, 20000) },
-                    totalQuantity: randomInt(2, 10),
-                    isActive: true
+        // 3. Create Multiple Customers
+        const customers = [];
+        for (let i = 0; i < 15; i++) {
+            const email = `customer${i}@rentlify.com`;
+            let user = await User.findOne({ email });
+            if (!user) {
+                user = await User.create({
+                    name: `Customer ${i}`,
+                    email: email,
+                    password: 'password123',
+                    role: 'customer',
+                    isEmailVerified: true
                 });
-                products.push(p);
             }
-            console.log('Created Products');
+            customers.push(user);
         }
+        console.log(`Created ${customers.length} Customers`);
 
-        // 5. Create Orders (Past & Present)
-        // We want data for the last 6 months
-        // 5. Create Orders (Past & Present)
+        // 4. Create Multiple Vendors
+        const vendors = []; // [{ user, profile }]
+        for (let i = 0; i < 8; i++) {
+            const email = `vendor${i}@rentlify.com`;
+            let user = await User.findOne({ email });
+            if (!user) {
+                user = await User.create({
+                    name: `Vendor ${i}`,
+                    email: email,
+                    password: 'password123',
+                    role: 'vendor',
+                    businessName: `Vendor Business ${i}`,
+                    isEmailVerified: true
+                });
+            }
+            let profile = await Vendor.findOne({ user: user._id });
+            if (!profile) {
+                profile = await Vendor.create({
+                    user: user._id,
+                    businessName: user.businessName,
+                    address: { city: 'Delhi', state: 'New Delhi' },
+                    rating: 4.0 + (Math.random())
+                });
+            }
+            vendors.push({ user, profile });
+        }
+        // Add main navnit vendor
+        vendors.push({ user: vendorUser, profile: vendorProfile });
+        console.log(`Created ${vendors.length} Vendors`);
+
+
+        // 5. Create Products for All Vendors
+        const categories = ['Cameras', 'Lenses', 'Lighting', 'Drones', 'Audio', 'Mounts'];
+        const productNames = ['Sony A7III', 'Canon R5', 'DJI Mavic 3', 'Godox SL60W', 'Sony 24-70mm GM', 'Rode Wireless Go', 'GoPro Hero 11'];
+
+        let allProducts = [];
+
+        for (const v of vendors) {
+            let existingProducts = await Product.find({ vendor: v.profile._id });
+            if (existingProducts.length < 3) {
+                for (let k = 0; k < randomInt(3, 8); k++) {
+                    const name = randomItem(productNames) + ' ' + randomInt(1, 100);
+                    const p = await Product.create({
+                        vendor: v.profile._id,
+                        name: name,
+                        description: `Professional gear from ${v.user.name}.`,
+                        category: randomItem(categories),
+                        images: ['https://placehold.co/600x400?text=' + name.replace(/ /g, '+')],
+                        pricing: { daily: randomInt(500, 5000), weekly: randomInt(3000, 20000) },
+                        totalQuantity: randomInt(1, 5),
+                        isActive: true
+                    });
+                    existingProducts.push(p);
+                }
+            }
+            allProducts = allProducts.concat(existingProducts);
+        }
+        console.log(`Ensured Products for all vendors`);
+
+        // 6. Create Orders (Past & Present)
         const today = new Date();
         const months = [0, 1, 2, 3, 4, 5];
 
         for (const m of months) {
-            // Increase volume: 5 to 12 orders per month
-            const orderCount = randomInt(5, 12);
+            const orderCount = randomInt(8, 20); // More orders
             for (let k = 0; k < orderCount; k++) {
+                // Random customer
+                const customer = randomItem(customers);
+                // Random product
+                const product = randomItem(allProducts);
+
                 const date = new Date();
                 date.setMonth(today.getMonth() - m);
-                // Random day in the month
                 date.setDate(randomInt(1, 28));
 
                 let status = 'completed';
                 let itemStatus = 'completed';
 
-                // More realistic status distribution
-                // Month 0 (Current): Mostly active/confirmed
+                // Month 0 (Current)
                 if (m === 0) {
                     const r = Math.random();
-                    if (r < 0.4) { status = 'confirmed'; itemStatus = 'pending'; }
-                    else if (r < 0.8) { status = 'in-progress'; itemStatus = 'active'; }
+                    if (r < 0.3) { status = 'confirmed'; itemStatus = 'pending'; } // Upcoming
+                    else if (r < 0.7) { status = 'in-progress'; itemStatus = 'active'; } // Active now
                     else { status = 'completed'; itemStatus = 'completed'; }
-                }
-                // Month 1 (Previous): Small chance of being late/active
-                else if (m === 1) {
-                    const r = Math.random();
-                    if (r < 0.2) { status = 'in-progress'; itemStatus = 'active'; } // Overdue or long rental
-                    else { status = 'completed'; itemStatus = 'completed'; }
+                } else if (m === 1) {
+                    if (Math.random() < 0.1) { status = 'in-progress'; itemStatus = 'active'; }
                 }
 
-                const product = randomItem(products);
-                const quantity = 1; // Simplify to 1 qty per order for now
                 const days = randomInt(2, 7);
                 const price = product.pricing.daily * days;
 
                 try {
                     await Order.create({
-                        customer: customerUser._id,
+                        customer: customer._id,
                         totalAmount: price,
                         status: status,
-                        paymentStatus: 'paid',
+                        paymentStatus: 'paid', // Assume paid for simplicity
                         items: [{
                             product: product._id,
-                            vendor: vendorProfile._id,
-                            quantity: quantity,
+                            vendor: product.vendor,
+                            quantity: 1,
                             startDate: date,
                             endDate: new Date(date.getTime() + 86400000 * days),
                             price: price,
@@ -132,12 +168,12 @@ const seed = async () => {
                         }],
                         createdAt: date
                     });
-                } catch (err) {
-                    console.error("Order Failed", err.message);
+                } catch (e) {
+                    // ignore duplicates or validation errors during seed
                 }
             }
         }
-        console.log('Created Orders with History');
+        console.log('Created extensive order history');
 
         console.log('✅ Seeding Complete!');
         process.exit(0);
