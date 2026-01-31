@@ -51,6 +51,30 @@ const getDashboardStats = async (req, res, next) => {
     }
 };
 
+const getAllVendors = async (req, res, next) => {
+    try {
+        const Vendor = require('../models/Vendor');
+        // Fetch users who are vendors
+        const vendors = await User.find({ role: 'vendor' })
+            .select('name email businessName isEmailVerified createdAt')
+            .sort({ createdAt: -1 });
+
+        // Enhance with profile data
+        const detailedVendors = await Promise.all(vendors.map(async (user) => {
+            const profile = await Vendor.findOne({ user: user._id });
+            return {
+                ...user.toObject(),
+                profile: profile || {}
+            };
+        }));
+
+        successResponse(res, 200, 'All Vendors', detailedVendors);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
-    getDashboardStats
+    getDashboardStats,
+    getAllVendors
 };

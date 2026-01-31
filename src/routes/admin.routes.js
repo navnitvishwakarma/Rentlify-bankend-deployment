@@ -8,5 +8,6 @@ const router = express.Router();
 router.use(auth);
 
 router.get('/stats', adminController.getDashboardStats);
+router.get('/vendors', adminController.getAllVendors);
 
 module.exports = router;
