@@ -43,14 +43,24 @@ const createOrder = async (req, res, next) => {
 
             // Calculate Price (Simplified: Daily rate * days)
             // Calculate Price (Simplified: Daily rate * days)
+            // Calculate Price (Simplified: Daily rate * days)
             let days = Math.ceil((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+
+            if (isNaN(days)) {
+                throw new Error(`Invalid dates for product: ${product.name}`);
+            }
+
             days = Math.max(1, days); // Ensure minimum 1 day charge
+
             const price = product.pricing.daily * days * item.quantity;
-            totalAmount += price;
+
+            if (isNaN(price)) {
+                throw new Error(`Invalid price calculation for product: ${product.name}`);
+            }
 
             orderItems.push({
                 product: product._id,
-                vendor: product.vendor,
+                vendor: product.vendor._id, // Explicitly use ID
                 quantity: item.quantity,
                 startDate: item.startDate,
                 endDate: item.endDate,
