@@ -41,7 +41,9 @@ const createOrder = async (req, res, next) => {
             }
 
             // Calculate Price (Simplified: Daily rate * days)
-            const days = Math.ceil((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+            // Calculate Price (Simplified: Daily rate * days)
+            let days = Math.ceil((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+            days = Math.max(1, days); // Ensure minimum 1 day charge
             const price = product.pricing.daily * days * item.quantity;
             totalAmount += price;
 
