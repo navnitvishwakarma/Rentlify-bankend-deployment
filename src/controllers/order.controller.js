@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Invoice = require('../models/Invoice');
 const reservationService = require('../services/reservation.service');
 const { successResponse, errorResponse } = require('../utils/response.util');
 
@@ -56,6 +57,49 @@ const createOrder = async (req, res, next) => {
 
         // 3. Create Reservations
         await reservationService.createReservations(orderItems, order[0]._id, session);
+
+        // 4. Generate Invoices (Group by Vendor)
+        const vendorItems = {};
+        for (const item of orderItems) {
+            const vendorId = item.vendor.toString();
+            if (!vendorItems[vendorId]) {
+                vendorItems[vendorId] = [];
+            }
+            vendorItems[vendorId].push(item);
+        }
+
+        const invoices = [];
+        for (const vendorId of Object.keys(vendorItems)) {
+            const itemsForVendor = vendorItems[vendorId];
+            const subtotal = itemsForVendor.reduce((sum, item) => sum + item.price, 0);
+            const taxAmount = subtotal * 0.18; // Assuming 18% tax
+            const total = subtotal + taxAmount;
+
+            const invoiceItems = await Promise.all(itemsForVendor.map(async (item) => {
+                const product = await Product.findById(item.product);
+                return {
+                    description: product.name,
+                    quantity: item.quantity,
+                    unitPrice: item.price / item.quantity, // Derived unit price
+                    amount: item.price
+                };
+            }));
+
+            invoices.push({
+                invoiceNumber: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                order: order[0]._id,
+                customer: req.user._id,
+                vendor: vendorId,
+                items: invoiceItems,
+                subtotal: subtotal,
+                taxAmount: taxAmount,
+                totalAmount: total,
+                status: 'paid', // Assuming immediate payment for now
+                dueDate: new Date()
+            });
+        }
+
+        await Invoice.create(invoices, { session });
 
         await session.commitTransaction();
         session.endSession();
