@@ -25,6 +25,10 @@ const createOrder = async (req, res, next) => {
                 throw new Error(`Cannot order product '${product.name}' as the vendor is not verified yet.`);
             }
 
+            if (!product.vendor.isActive) {
+                throw new Error(`Cannot order product '${product.name}' as the vendor account is suspended.`);
+            }
+
             const isAvailable = await reservationService.checkAvailability(
                 product._id,
                 new Date(item.startDate),

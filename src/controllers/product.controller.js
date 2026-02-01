@@ -29,8 +29,8 @@ const getProducts = async (req, res, next) => {
             filters.$text = { $search: req.query.search };
         }
 
-        // Get all verified vendors first
-        const verifiedVendors = await Vendor.find({ isVerified: true }).select('_id');
+        // Get all active and verifying vendors first
+        const verifiedVendors = await Vendor.find({ isVerified: true, isActive: true }).select('_id');
         const verifiedVendorIds = verifiedVendors.map(v => v._id);
 
         // Add vendor filter to products query
@@ -50,9 +50,9 @@ const getProduct = async (req, res, next) => {
             return errorResponse(res, 404, 'Product not found');
         }
 
-        // Hide product if vendor is not verified
-        if (!product.vendor.isVerified) {
-            return errorResponse(res, 403, 'This product is currently unavailable (Vendor not verified)');
+        // Hide product if vendor is not verified or suspended
+        if (!product.vendor.isVerified || !product.vendor.isActive) {
+            return errorResponse(res, 403, 'This product is currently unavailable (Vendor not verified or suspended)');
         }
 
         successResponse(res, 200, 'Product details', product);
