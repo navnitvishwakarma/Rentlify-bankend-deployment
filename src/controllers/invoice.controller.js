@@ -3,7 +3,11 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 
 const getInvoices = async (req, res, next) => {
     try {
-        const invoices = await Invoice.find({ customer: req.user._id });
+        const query = { customer: req.user._id };
+        if (req.query.orderId) {
+            query.order = req.query.orderId;
+        }
+        const invoices = await Invoice.find(query).populate('vendor', 'name email');
         successResponse(res, 200, 'Invoices list', invoices);
     } catch (error) {
         next(error);
