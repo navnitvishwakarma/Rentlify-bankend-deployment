@@ -62,7 +62,8 @@ const createOrder = async (req, res, next) => {
             customer: req.user._id,
             items: orderItems,
             totalAmount: totalAmount,
-            status: 'confirmed', // Or pending payment
+            status: 'confirmed',
+            shippingAddress: req.body.shippingAddress, // Save shipping details
         }], { session });
 
         // 3. Create Reservations
