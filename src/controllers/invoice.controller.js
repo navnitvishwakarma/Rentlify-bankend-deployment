@@ -24,8 +24,8 @@ const getInvoices = async (req, res, next) => {
 
         // 3. Execute Query (No Debug Logs to avoid circular JSON error)
         const invoices = await Invoice.find(query)
-            .populate('vendor', 'name email businessName')
-            .populate('customer', 'name email')
+            .populate('vendor', 'name email businessName gstNumber')
+            .populate('customer', 'name email gstNumber')
             .sort({ createdAt: -1 });
 
         successResponse(res, 200, 'Invoices list', invoices);
@@ -37,8 +37,8 @@ const getInvoices = async (req, res, next) => {
 const getInvoice = async (req, res, next) => {
     try {
         const invoice = await Invoice.findById(req.params.id)
-            .populate('vendor', 'name email businessName')
-            .populate('customer', 'name email');
+            .populate('vendor', 'name email businessName gstNumber')
+            .populate('customer', 'name email gstNumber');
 
         if (!invoice) return errorResponse(res, 404, 'Invoice not found');
         successResponse(res, 200, 'Invoice details', invoice);
