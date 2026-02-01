@@ -16,6 +16,7 @@ const getCart = async (req, res) => {
 
         successResponse(res, httpStatus.OK, 'Cart retrieved successfully', cart);
     } catch (error) {
+        console.error("GetCart Error:", error);
         errorResponse(res, httpStatus.INTERNAL_SERVER_ERROR, error.message);
     }
 };
@@ -63,6 +64,7 @@ const addToCart = async (req, res) => {
         await cart.populate('items.product');
         successResponse(res, httpStatus.OK, 'Item added to cart', cart);
     } catch (error) {
+        console.error("AddToCart Error:", error);
         errorResponse(res, httpStatus.INTERNAL_SERVER_ERROR, error.message);
     }
 };
