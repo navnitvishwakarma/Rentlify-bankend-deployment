@@ -12,6 +12,9 @@ router.route('/')
     .get(orderController.getOrders)
     .post(validate(orderValidation.createOrder), orderController.createOrder);
 
+router.route('/vendor/active')
+    .get(orderController.getVendorActiveOrders);
+
 router.route('/:id')
     .get(orderController.getOrder);
 

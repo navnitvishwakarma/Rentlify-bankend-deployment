@@ -239,9 +239,79 @@ const updateOrderStatus = async (req, res, next) => {
     }
 };
 
+const getVendorActiveOrders = async (req, res, next) => {
+    try {
+        const Vendor = require('../models/Vendor');
+        const vendor = await Vendor.findOne({ user: req.user._id });
+
+        if (!vendor) {
+            return errorResponse(res, 404, 'Vendor profile not found');
+        }
+
+        const vendorId = vendor._id.toString();
+
+        // Find orders containing items from this vendor
+        const orders = await Order.find({
+            'items.vendor': vendor._id,
+            'status': { $in: ['confirmed', 'in-progress'] } // Active orders only
+        })
+            .populate('customer', 'name email phone')
+            .populate('items.product', 'name images pricing');
+
+        const activeItems = [];
+        const today = new Date();
+
+        // Process orders to extract specific vendor items and calculate fines
+        orders.forEach(order => {
+            order.items.forEach(item => {
+                // Filter only this vendor's items that are active
+                if (item.vendor.toString() === vendorId) {
+                    const endDate = new Date(item.endDate);
+                    let fine = 0;
+                    let overdueDays = 0;
+
+                    // Check if overdue
+                    if (today > endDate) {
+                        const timeDiff = today - endDate;
+                        overdueDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+                        // Fine Calculation: 2x Daily Rate * Overdue Days
+                        // Ensure product and pricing exist to avoid crashes
+                        if (item.product && item.product.pricing) {
+                            fine = (item.product.pricing.daily * 2) * overdueDays * item.quantity;
+                        }
+                    }
+
+                    activeItems.push({
+                        _id: item._id, // Item ID (if needed)
+                        orderId: order.orderId,
+                        orderDbId: order._id,
+                        customer: order.customer,
+                        product: item.product,
+                        quantity: item.quantity,
+                        startDate: item.startDate,
+                        endDate: item.endDate,
+                        status: item.status || order.status,
+                        overdueDays: overdueDays > 0 ? overdueDays : 0,
+                        fine: fine
+                    });
+                }
+            });
+        });
+
+        // Sort by overdue first, then date
+        activeItems.sort((a, b) => b.fine - a.fine || new Date(a.endDate) - new Date(b.endDate));
+
+        successResponse(res, 200, 'Active orders retrieved', activeItems);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createOrder,
     getOrders,
     getOrder,
-    updateOrderStatus
+    updateOrderStatus,
+    getVendorActiveOrders
 };
