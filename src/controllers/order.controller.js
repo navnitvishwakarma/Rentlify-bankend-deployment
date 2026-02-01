@@ -57,6 +57,7 @@ const createOrder = async (req, res, next) => {
 
         // 3. Create Reservations
         await reservationService.createReservations(orderItems, order[0]._id, session);
+        console.log("Reservations created");
 
         // 4. Generate Invoices (Group by Vendor)
         const vendorItems = {};
@@ -67,6 +68,7 @@ const createOrder = async (req, res, next) => {
             }
             vendorItems[vendorId].push(item);
         }
+        console.log("Vendor groups:", Object.keys(vendorItems));
 
         const invoices = [];
         for (const vendorId of Object.keys(vendorItems)) {
@@ -99,7 +101,9 @@ const createOrder = async (req, res, next) => {
             });
         }
 
+        console.log("Creating invoices:", invoices.length);
         await Invoice.create(invoices, { session });
+        console.log("Invoices created successfully");
 
         await session.commitTransaction();
         session.endSession();
