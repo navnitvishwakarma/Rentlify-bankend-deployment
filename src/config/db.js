@@ -8,7 +8,14 @@ const connectDB = async () => {
             return mongoose;
         }
 
-        await mongoose.connect(config.mongoose.url, config.mongoose.options);
+        const opts = {
+            ...config.mongoose.options,
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+            bufferCommands: false, // Fail fast if no connection
+        };
+
+        await mongoose.connect(config.mongoose.url, opts);
         console.log('MongoDB Connected successfully');
         return mongoose;
     } catch (error) {
