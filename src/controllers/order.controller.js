@@ -8,6 +8,7 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 const createOrder = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
+    console.log("Create Order Payload:", JSON.stringify(req.body, null, 2));
 
     try {
         const { items } = req.body;
@@ -125,10 +126,14 @@ const createOrder = async (req, res, next) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        // If it's a known error, send 400
-        if (error.message.includes('not available') || error.message.includes('Product not found')) {
+        if (error.name === 'ValidationError') {
             return errorResponse(res, 400, error.message);
         }
+        // If it's a known error, send 400
+        if (error.message.includes('not available') || error.message.includes('Product not found') || error.message.includes('Cannot order product')) {
+            return errorResponse(res, 400, error.message);
+        }
+        console.error("Create Order Error:", error);
         next(error);
     }
 };
