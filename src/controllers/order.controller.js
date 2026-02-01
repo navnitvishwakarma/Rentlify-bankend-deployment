@@ -16,9 +16,13 @@ const createOrder = async (req, res, next) => {
 
         // 1. Validate Items & Check Availability
         for (const item of items) {
-            const product = await Product.findById(item.product);
+            const product = await Product.findById(item.product).populate('vendor');
             if (!product) {
                 throw new Error(`Product not found: ${item.product}`);
+            }
+
+            if (!product.vendor.isVerified) {
+                throw new Error(`Cannot order product '${product.name}' as the vendor is not verified yet.`);
             }
 
             const isAvailable = await reservationService.checkAvailability(

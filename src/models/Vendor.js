@@ -30,6 +30,10 @@ const vendorSchema = mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
     rating: {
         type: Number,
         default: 0,
