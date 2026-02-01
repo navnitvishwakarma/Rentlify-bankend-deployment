@@ -12,6 +12,15 @@ const getCart = async (req, res) => {
 
         if (!cart) {
             cart = await Cart.create({ user: req.user._id, items: [] });
+        } else {
+            // Self-healing: Remove items where product is null (deleted/invalid)
+            const initialCount = cart.items.length;
+            cart.items = cart.items.filter(item => item.product !== null);
+
+            if (cart.items.length !== initialCount) {
+                console.log(`[Auto-Heal] Removed ${initialCount - cart.items.length} invalid items from cart ${cart._id}`);
+                await cart.save();
+            }
         }
 
         successResponse(res, httpStatus.OK, 'Cart retrieved successfully', cart);
@@ -51,8 +60,6 @@ const addToCart = async (req, res) => {
 
             if (itemIndex > -1) {
                 // Update quantity if item exists
-                // Note: We don't change period here, confusing UX usually. 
-                // User can update period separately or remove and re-add.
                 cart.items[itemIndex].quantity += quantity;
             } else {
                 // Add new item
@@ -62,6 +69,15 @@ const addToCart = async (req, res) => {
         }
 
         await cart.populate('items.product');
+
+        // Self-healing check (post-populate)
+        const initialCount = cart.items.length;
+        cart.items = cart.items.filter(item => item.product !== null);
+        if (cart.items.length !== initialCount) {
+            console.log(`[Auto-Heal] Removed ${initialCount - cart.items.length} invalid items from cart ${cart._id} during add`);
+            await cart.save();
+        }
+
         successResponse(res, httpStatus.OK, 'Item added to cart', cart);
     } catch (error) {
         console.error("AddToCart Error:", error);
