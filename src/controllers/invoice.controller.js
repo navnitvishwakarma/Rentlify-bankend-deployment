@@ -1,34 +1,33 @@
+const Invoice = require('../models/Invoice');
 const Vendor = require('../models/Vendor');
+const { successResponse, errorResponse } = require('../utils/response.util');
 
 const getInvoices = async (req, res, next) => {
     try {
         const query = {};
-        console.log(`[DEBUG] getInvoices called by User: ${req.user._id}, Role: ${req.user.role}`);
 
+        // 1. Filter by Role
         if (req.user.role === 'vendor') {
             const vendor = await Vendor.findOne({ user: req.user._id });
             if (!vendor) {
-                console.log(`[DEBUG] Vendor profile not found for user ${req.user._id}`);
                 return errorResponse(res, 404, 'Vendor profile not found');
             }
-            console.log(`[DEBUG] Found Vendor Profile: ${vendor._id}`);
             query.vendor = vendor._id;
         } else if (req.user.role === 'customer') {
             query.customer = req.user._id;
         }
-        // Admin can see all, or we can enforce filters if needed
 
+        // 2. Filter by specific Order
         if (req.query.orderId) {
             query.order = req.query.orderId;
         }
 
-        console.log(`[DEBUG] Executing Invoice Query:`, JSON.stringify(query));
+        // 3. Execute Query (No Debug Logs to avoid circular JSON error)
         const invoices = await Invoice.find(query)
             .populate('vendor', 'name email businessName')
             .populate('customer', 'name email')
             .sort({ createdAt: -1 });
 
-        console.log(`[DEBUG] Found ${invoices.length} invoices`);
         successResponse(res, 200, 'Invoices list', invoices);
     } catch (error) {
         next(error);
@@ -37,7 +36,10 @@ const getInvoices = async (req, res, next) => {
 
 const getInvoice = async (req, res, next) => {
     try {
-        const invoice = await Invoice.findById(req.params.id);
+        const invoice = await Invoice.findById(req.params.id)
+            .populate('vendor', 'name email businessName')
+            .populate('customer', 'name email');
+
         if (!invoice) return errorResponse(res, 404, 'Invoice not found');
         successResponse(res, 200, 'Invoice details', invoice);
     } catch (error) {
